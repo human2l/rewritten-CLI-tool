@@ -26,25 +26,78 @@
   </head>
   <body>
     <div class="container">
-      <div class="row">
-        <input type="file" id="fileInput" name="file" />
-      </div>
-      <div class="row my-3">
-        <div class="col">
-          <video
-            id="inputVideoSrc"
-            alt="No Video"
-          ></video>
+      <div class="control-panel">
+        <div class="row my-3">
+          <div class="col">
+            <label for="fileInput">Select video:</label>
+            <input type="file" id="fileInput" name="file" />
+          </div>
+          <div class="col">
+            <label for="fpsInput">FPS: </label>
+            <input
+              type="text"
+              name="fpsInput"
+              id="fpsInput"
+              value="30"
+              onchange="updateFPS(this.value)"
+            />
+          </div>
+          <div class="col">
+            <div class="button-group">
+              <button
+                id="startBtn"
+                class="btn btn-success"
+                onclick="start()"
+                disabled
+              >
+                Start
+              </button>
+              <button
+                id="pauseBtn"
+                class="btn btn-warning"
+                onclick="pause()"
+                disabled
+              >
+                Pause
+              </button>
+              <button
+                id="stopBtn"
+                class="btn btn-danger"
+                onclick="stop()"
+                disabled
+              >
+                Stop
+              </button>
+            </div>
+          </div>
         </div>
+      </div>
+      <div class="content-placeholder">
+          <p>Loading...</p>
+      </div>
+      <div class="content">
+        <div class="row">
+          <div class="col">Video loaded:</div>
+          <div class="col">Frame uploading:</div>
+          <div class="col">Picture receiving:</div>
+        </div>
+        <div class="row my-3">
+          <div class="col">
+            <video id="inputVideoSrc" alt="No Video"></video>
+          </div>
 
-        <div class="col">
-          <canvas id="canvasImage"></canvas>
+          <div class="col">
+            <canvas id="canvasImage"></canvas>
+          </div>
+          <div class="col">
+            <p>[pictures received from server]</p>
+          </div>
         </div>
-      </div>
-      <div class="test">
-        <input type="file" id="inputImage" name="file" />
-        <img id="image" src="" alt="No Image" />
-        <canvas id="inputImageCanvas"></canvas>
+        <div class="test">
+          <input type="file" id="inputImage" name="file" />
+          <img id="image" src="" alt="No Image" />
+          <canvas id="inputImageCanvas"></canvas>
+        </div>
       </div>
     </div>
   </body>
