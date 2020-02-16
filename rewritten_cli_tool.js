@@ -1,53 +1,67 @@
-const contentPlaceholder = document.getElementsByClassName("content-placeholder")[0];
+const testContent = document.getElementsByClassName("test")[0];
+const controlPanel = document.getElementsByClassName("control-panel")[0];
+const controlPanelPlaceholder = document.getElementsByClassName(
+  "control-panel-placeholder"
+)[0];
+const contentPlaceholder = document.getElementsByClassName(
+  "content-placeholder"
+)[0];
 const content = document.getElementsByClassName("content")[0];
 const startBtn = document.getElementById("startBtn");
 const pauseBtn = document.getElementById("pauseBtn");
-const stopBtn = document.getElementById("stopBtn");
+const resetBtn = document.getElementById("resetBtn");
 const inputFileElement = document.getElementById("fileInput");
 const video = document.getElementById("inputVideoSrc");
-const canvas = document.getElementById("canvasImage");
-const ctx = canvas.getContext("2d");
+const uploadCanvas = document.getElementById("uploadCanvas");
+const uploadCtx = uploadCanvas.getContext("2d");
+// const svgShowCase = document.getElementsByClassName("svg-showcase")[0];
+const borderCanvasArea = document.getElementById("border-canvas-area");
 let ws = undefined;
-let FPS = 30;
-let processing = false;
+let cap = undefined;
+let frame = undefined;
+let imageScaleRatio = 1 / 4;
+const showcaseCanvas = document.getElementById("showcaseCanvas");
+const showcaseCtx = showcaseCanvas.getContext("2d");
+
 init();
 initConnection();
 initInputCanvas();
 
-function init(){
-    content.hidden = true;
-    contentPlaceholder.hidden = true;
+function init() {
+  controlPanel.hidden = true;
+  content.hidden = true;
+  contentPlaceholder.hidden = true;
 }
 
-function start() {
-  processing = true;
-  run();
+function startAndSend() {
+  startBtn.disabled = true;
+  processVideo();
 }
 
 function pause() {
-  if (processing) {
-    processing = false;
+  if (!video.paused) {
+    video.pause();
     pauseBtn.innerHTML = "Resume";
   } else {
-    processing = true;
-    run();
+    processVideo();
     pauseBtn.innerHTML = "Pause";
   }
 }
 
-function stop() {
-  processing = false;
+function reset() {
+  video.pause();
   video.currentTime = 0;
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-}
-
-function updateFPS(newFPS){
-    FPS = newFPS
+  uploadCtx.clearRect(0, 0, uploadCanvas.width, uploadCanvas.height);
+  showcaseCtx.clearRect(0, 0, showcaseCanvas.width, showcaseCanvas.height);
 }
 
 function initConnection() {
   ws = new WebSocket(
-    "wss://aminaiee@gmail.com:JIBB1234!@ipsa.testing.jibb.cloud/"
+    // "wss://aminaiee@gmail.com:JIBB1234!@ipsa.testing.jibb.cloud/"
+    // "ws://localhost:9009/"
+    // "ws://kai:JIBB1234!@192.168.1.209:8080"
+    "ws://192.168.1.209:8080?username=kai&password=anything"
+    // "ws://ipsa.testing.jibb.cloud?username=kai&password=anything"
   );
 
   ws.onopen = function(evt) {
@@ -55,8 +69,20 @@ function initConnection() {
   };
 
   ws.onmessage = function(evt) {
-    console.log(evt);
     console.log("Received Message: " + evt.data);
+    startBtn.disabled = false;
+    var evtObject = JSON.parse(evt.data);
+    // console.log(evtObject);
+
+    //TODO: add handle warning & error message
+
+    //need to modify to a more logical one
+    if (evtObject[2] != undefined) {
+      var svgObject = evtObject[2];
+      handleSVG(svgObject);
+      var cornerObject = evtObject[3];
+      handleCorners(cornerObject);
+    }
   };
 
   ws.onclose = function(evt) {
@@ -72,7 +98,8 @@ function onOpenCvReady() {
   console.log("opencv.js is ready");
   cv["onRuntimeInitialized"] = () => {
     //do something only after ready
-    // run();
+    controlPanelPlaceholder.hidden = true;
+    controlPanel.hidden = false;
   };
 }
 
@@ -85,208 +112,110 @@ function initInputCanvas() {
       contentPlaceholder.hidden = false;
       video.src = URL.createObjectURL(e.target.files[0]);
       setTimeout(() => {
-        video.height = video.videoHeight / 4;
-        video.width = video.videoWidth / 4;
+        video.height = video.videoHeight * imageScaleRatio;
+        video.width = video.videoWidth * imageScaleRatio;
         startBtn.disabled = false;
         pauseBtn.disabled = false;
-        stopBtn.disabled = false;
+        resetBtn.disabled = false;
         content.hidden = false;
         contentPlaceholder.hidden = true;
+        initVideoCapture();
       }, 3000);
     },
     false
   );
 }
 
-function run() {
-  //   const FPS = 30;
-  let cap = new cv.VideoCapture(video);
-  // take first frame of the video
-  // video.height, video.width, cv.CV_8UC4
-  let frame = new cv.Mat(video.height, video.width, cv.CV_8UC4);
-
-  function processVideo() {
-    if (!processing) {
-      video.pause();
-      return;
-    }
-
-    let begin = Date.now();
-    cap.read(frame);
-    cv.imshow("canvasImage", frame);
-    var imgURI = canvas.toDataURL("image/jpeg");
-    console.log(imgURI);
-    //byteString: decoded from base64
-    byteStringTest = atob(imgURI.split(",")[1]);
-    console.log(byteStringTest);
-    // console.log(Buffer.from(byteStringTest,'base64'));
-    
-    // ws.send(byteStringTest);
-
-
-    //1
-    // var buffer1 = convertBase64ToFile(imgURI);
-    // console.log(1);
-    // console.log(buffer1);
-    // //2
-    // const byteString = imgURI.split(",")[1];
-    // var buffer2 = _base64ToArrayBuffer(byteString);
-    // console.log(2);
-    // console.log(buffer2);
-    // // var aaa = buffer2.from(byteString,'base64');
-    // // console.log(aaa);
-    // //3
-    // var buffer3 = decodeBase64(imgURI);
-    // console.log(3);
-    // console.log(buffer3);
-    // console.log(new Uint8Array(buffer3));
-    // return;
-    // ws.send(new Uint8Array(buffer3));
-    // ws.send(buffer3);
-    //4
-    // const byteString = imgURI.split(",")[1];
-    // var bytesArray = Uint8Array.from(atob(byteString), c => c.charCodeAt(0));
-    // console.log(bytesArray);
-    // ws.send(bytesArray);
-    // return;
-
-    // onInputImage()
-
-    // download("image_data", result);
-
-    //--testing---
-    // setTimeout(() => {
-    //     var img = ctx.getImageData(0, 0, 400, 320);
-    //     var binary = new Uint8Array(img.data.length);
-    //     for (var i = 0; i < img.data.length; i++) {
-    //       binary[i] = img.data[i];
-    //     }
-    //     console.log(binary.buffer);
-    //     ws.send(binary.buffer);
-    // }, 3000);
-
-    // onInputImage(result);
-    // return;
-
-    let delay = 1000 / FPS - (Date.now() - begin);
-    // console.log(Date.now() - begin);
-    setTimeout(processVideo, delay);
-  }
-  video.play(); //controlled by start button
-  // schedule the first one.
-  setTimeout(processVideo, 0);
+function initVideoCapture() {
+  cap = new cv.VideoCapture(video);
+  frame = new cv.Mat(video.height, video.width, cv.CV_8UC4);
 }
 
-function onInputImage() {
-  imagedata = ctx.getImageData(0, 0, video.height, video.width);
-  var canvaspixelarray = imagedata.data;
-  var canvaspixellen = canvaspixelarray.length;
-  var bytearray = new Uint8Array(canvaspixellen);
-  for (var i = 0; i < canvaspixellen; ++i) {
-    bytearray[i] = canvaspixelarray[i];
-  }
-  console.log(bytearray.buffer);
-  //   ws.send(bytearray.buffer);
+function processVideo() {
+  if (video.paused) video.play();
+  cap.read(frame);
+  cv.imshow("uploadCanvas", frame);
+  var imgURI = uploadCanvas.toDataURL("image/jpeg");
+  var bytesarray = convertBase64ToBytearray(imgURI);
+  ws.send(bytesarray);
 }
 
-//for testing---------------
-const inputImage = document.getElementById("inputImage");
-const image = document.getElementById("image");
-inputImage.addEventListener(
-  "change",
-  e => {
-    image.src = URL.createObjectURL(e.target.files[0]);
-
-    //   ws.send(image)
-  },
-  false
-);
-
-image.onload = function() {
-  image.height = "480";
-  image.width = "520";
-  let mat = cv.imread(image);
-  cv.imshow("inputImageCanvas", mat);
-  mat.delete();
-};
-
-function _base64ToArrayBuffer(base64) {
-  var binary_string = window.atob(base64);
-  var len = binary_string.length;
-  var bytes = new Uint8Array(len);
-  for (var i = 0; i < len; i++) {
-    bytes[i] = binary_string.charCodeAt(i);
-  }
-  return bytes.buffer;
-}
-
-//original
-const convertBase64ToFile = function(image) {
+const convertBase64ToBytearray = function(image) {
   const byteString = atob(image.split(",")[1]);
-  // console.log(typeof(byteString))
-  // new bytearray()
   const ab = new ArrayBuffer(byteString.length);
   const ia = new Uint8Array(ab);
   for (let i = 0; i < byteString.length; i++) {
     ia[i] = byteString.charCodeAt(i);
   }
-  return ia.buffer;
-  const newBlob = new Blob([ab], {
-    type: "image/jpeg"
-  });
-  console.log(newBlob);
-  ws.send(newBlob);
-
-  //Download the newBlob as jpg
-  var link = document.createElement("a");
-  link.href = window.URL.createObjectURL(newBlob);
-  var fileName = "blah.jpg";
-  link.download = fileName;
-  link.click();
+  return ia;
 };
 
-function decodeBase64(inputString) {
-  return decode(inputString);
+function handleSVG(svgObject) {
+  var svgString = svgObject.svg;
+  var svgNode = Utils.createElementFromHTML(svgString);
+  //for testing:
+  //   svgShowCase.replaceChild(svgNode, svgShowCase.childNodes[0]);
+  //   showcaseCanvas.width = svgNode.getAttribute("width") * imageScaleRatio;
+  //   showcaseCanvas.height = svgNode.getAttribute("height") * imageScaleRatio;
+  showcaseCanvas.width = video.width;
+  showcaseCanvas.height = video.height;
+  var context = showcaseCanvas.getContext("2d");
+  context.clearRect(0, 0, showcaseCanvas.width, showcaseCanvas.height);
+  Utils.importSVG(svgNode, showcaseCanvas);
 }
 
-//Copied from online! Delete after research!
-var chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
-
-// Use a lookup table to find the index.
-var lookup = new Uint8Array(256);
-for (var i = 0; i < chars.length; i++) {
-  lookup[chars.charCodeAt(i)] = i;
+function handleCorners(cornerObject) {
+  var borderCanvas = Utils.cloneCanvas(uploadCanvas);
+  var borderCtx = borderCanvas.getContext("2d");
+  borderCtx.moveTo(
+    (cornerObject.corners[3].x * borderCanvas.width) / 100,
+    (cornerObject.corners[3].y * borderCanvas.height) / 100
+  );
+  for (var key in cornerObject.corners) {
+    borderCtx.lineTo(
+      (cornerObject.corners[key].x * borderCanvas.width) / 100,
+      (cornerObject.corners[key].y * borderCanvas.height) / 100
+    );
+  }
+  borderCtx.strokeStyle = "red";
+  borderCtx.stroke();
+  borderCanvasArea.replaceChild(borderCanvas, borderCanvasArea.childNodes[0]);
 }
-function decode(base64) {
-  var bufferLength = base64.length * 0.75,
-    len = base64.length,
-    i,
-    p = 0,
-    encoded1,
-    encoded2,
-    encoded3,
-    encoded4;
 
-  if (base64[base64.length - 1] === "=") {
-    bufferLength--;
-    if (base64[base64.length - 2] === "=") {
-      bufferLength--;
-    }
+Utils = {
+  createElementFromHTML: function(htmlString) {
+    var div = document.createElement("div");
+    div.innerHTML = htmlString.trim();
+
+    // Change this to div.childNodes to support multiple top-level nodes
+    return div.firstChild;
+  },
+
+  importSVG: function(sourceSVG, targetCanvas) {
+    svg_xml = new XMLSerializer().serializeToString(sourceSVG);
+    var ctx = targetCanvas.getContext("2d");
+    var img = new Image();
+    img.src = "data:image/svg+xml;base64," + btoa(svg_xml);
+
+    img.onload = function() {
+      ctx.drawImage(img, 0, 0, targetCanvas.width, targetCanvas.height);
+    };
+  },
+
+  cloneCanvas: function(oldCanvas) {
+    var newCanvas = document.createElement("canvas");
+    var context = newCanvas.getContext("2d");
+    newCanvas.width = oldCanvas.width;
+    newCanvas.height = oldCanvas.height;
+    context.drawImage(oldCanvas, 0, 0);
+    return newCanvas;
   }
+};
 
-  var arraybuffer = new ArrayBuffer(bufferLength),
-    bytes = new Uint8Array(arraybuffer);
-
-  for (i = 0; i < len; i += 4) {
-    encoded1 = lookup[base64.charCodeAt(i)];
-    encoded2 = lookup[base64.charCodeAt(i + 1)];
-    encoded3 = lookup[base64.charCodeAt(i + 2)];
-    encoded4 = lookup[base64.charCodeAt(i + 3)];
-
-    bytes[p++] = (encoded1 << 2) | (encoded2 >> 4);
-    bytes[p++] = ((encoded2 & 15) << 4) | (encoded3 >> 2);
-    bytes[p++] = ((encoded3 & 3) << 6) | (encoded4 & 63);
-  }
-
-  return arraybuffer;
+function showSize() {
+  console.log(video.height + "video w: " + video.width);
+  console.log(uploadCanvas.height + "uploadCanvas w:" + uploadCanvas.width);
+  console.log(
+    showcaseCanvas.height + "showcaseCanvas w:" + showcaseCanvas.width
+  );
 }

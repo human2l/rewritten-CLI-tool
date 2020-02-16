@@ -23,16 +23,28 @@
       crossorigin="anonymous"
     ></script>
     <meta charset="utf-8" />
+    <style>
+      #showcaseCanvas {
+        /* position: absolute; */
+        /* left: 0px; */
+        /* top: 100px; */
+        /* margin: 10px; */
+        border: thin solid #e60606;
+      }
+    </style>
   </head>
   <body>
-    <div class="container">
-      <div class="control-panel">
-        <div class="row my-3">
+    <div class="control-panel-placeholder">
+      <p>opencv.js is loading......</p>
+    </div>
+    <div class="control-panel">
+      <div class="controls">
+        <div class="row">
           <div class="col">
             <label for="fileInput">Select video:</label>
             <input type="file" id="fileInput" name="file" />
           </div>
-          <div class="col">
+          <!-- <div class="col">
             <label for="fpsInput">FPS: </label>
             <input
               type="text"
@@ -41,16 +53,18 @@
               value="30"
               onchange="updateFPS(this.value)"
             />
-          </div>
+          </div> -->
           <div class="col">
             <div class="button-group">
+                <input type="checkbox" name="Auto Send" id="autoSendCB">
+                <label for="autoSendCB" class="mr-3">Auto Send</label>
               <button
                 id="startBtn"
                 class="btn btn-success"
-                onclick="start()"
+                onclick="startAndSend()"
                 disabled
               >
-                Start
+                Start & Send
               </button>
               <button
                 id="pauseBtn"
@@ -61,45 +75,49 @@
                 Pause
               </button>
               <button
-                id="stopBtn"
+                id="resetBtn"
                 class="btn btn-danger"
-                onclick="stop()"
+                onclick="reset()"
                 disabled
               >
-                Stop
+                Reset
               </button>
             </div>
           </div>
         </div>
       </div>
-      <div class="content-placeholder">
-          <p>Loading...</p>
-      </div>
-      <div class="content">
-        <div class="row">
-          <div class="col">Video loaded:</div>
-          <div class="col">Frame uploading:</div>
-          <div class="col">Picture receiving:</div>
+    </div>
+    <div class="content-placeholder">
+      <p>Loading...</p>
+    </div>
+    <div class="content">
+      <div class="row">
+        <div class="col">
+          <p>Video loaded:</p>
+          <video id="inputVideoSrc" alt="No Video"></video>
         </div>
-        <div class="row my-3">
-          <div class="col">
-            <video id="inputVideoSrc" alt="No Video"></video>
-          </div>
+        <div class="col">
+          <p>Frame uploaded:</p>
+          <canvas id="uploadCanvas"></canvas>
+        </div>
+        <div class="col">
+          <p>SVG received:</p>
+          <canvas id="showcaseCanvas"></canvas>
+          <!-- <div class="svg-showcase" hidden></div> -->
+        </div>
+        <div class="col">
+            <p>Borders detected:</p>
+            <div id="border-canvas-area">
 
-          <div class="col">
-            <canvas id="canvasImage"></canvas>
-          </div>
-          <div class="col">
-            <p>[pictures received from server]</p>
-          </div>
+            </div>
         </div>
-        <div class="test">
-          <input type="file" id="inputImage" name="file" />
-          <img id="image" src="" alt="No Image" />
-          <canvas id="inputImageCanvas"></canvas>
-        </div>
+        
+        
       </div>
     </div>
+    <!-- <svg xmlns="http://www.w3.org/2000/svg" width="592" height="1200" viewBox="0 0 592 1200" version="1.1">
+        <path d="M 575.079 246.583 C 575.127 247.748, 575.364 247.985, 575.683 247.188 C 575.972 246.466, 575.936 245.603, 575.604 245.271 C 575.272 244.939, 575.036 245.529, 575.079 246.583 M 575.079 252.583 C 575.127 253.748, 575.364 253.985, 575.683 253.188 C 575.972 252.466, 575.936 251.603, 575.604 251.271 C 575.272 250.939, 575.036 251.529, 575.079 252.583 M 14.833 965.884 C 14.196 971.977, 15.227 977, 17.113 977 C 19.407 977, 23.021 974.496, 22.539 973.240 C 22.242 972.468, 22 971.423, 22 970.918 C 22 970.413, 21.663 970.096, 21.250 970.212 C 20.837 970.329, 19.513 969.877, 18.307 969.208 C 16.686 968.308, 16.034 966.884, 15.807 963.745 C 15.531 959.923, 15.434 960.136, 14.833 965.884 " stroke="none" fill="black" fill-rule="evenodd"/>
+    </svg> -->
   </body>
   <script src="rewritten_cli_tool.js"></script>
   <script src="FileSaver.js"></script>
