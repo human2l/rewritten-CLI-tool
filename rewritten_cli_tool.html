@@ -39,32 +39,143 @@
     </div>
     <div class="control-panel">
       <div class="controls">
-        <div class="row">
-          <div class="col">
+        <div class="row d-flex justify-content-between">
+          <div class="col-2">
             <label for="fileInput">Select video:</label>
             <input type="file" id="fileInput" name="file" />
           </div>
-          <!-- <div class="col">
-            <label for="fpsInput">FPS: </label>
-            <input
-              type="text"
-              name="fpsInput"
-              id="fpsInput"
-              value="30"
-              onchange="updateFPS(this.value)"
-            />
-          </div> -->
-          <div class="col">
+          <div class="col-4 text-danger">
+            <p id="messageContent"></p>
+          </div>
+          <div class="col-3">
+            <div class="btn-group btn-group-toggle" data-toggle="buttons">
+              <label class="btn btn-info active">
+                <input
+                  type="radio"
+                  name="options"
+                  id="realtimeMode"
+                  checked
+                  onclick="toggleMode(this)"
+                />
+                Realtime Mode
+              </label>
+              <label class="btn btn-info">
+                <input
+                  type="radio"
+                  name="options"
+                  id="steppingMode"
+                  onclick="toggleMode(this)"
+                />
+                Stepping Mode
+              </label>
+            </div>
+          </div>
+          <div class="col-3">
             <div class="button-group">
-                <input type="checkbox" name="Auto Send" id="autoSendCB">
-                <label for="autoSendCB" class="mr-3">Auto Send</label>
+              <button class="btn btn-primary" onclick="buildConnection()">
+                Connect to IPSA
+              </button>
+              <button
+                class="btn btn-secondary"
+                data-toggle="modal"
+                data-target="#settingsModal"
+              >
+                Settings
+              </button>
+              <div
+                class="modal fade"
+                id="settingsModal"
+                tabindex="-1"
+                role="dialog"
+                aria-labelledby="settingsTitle"
+                aria-hidden="true"
+              >
+                <div class="modal-dialog modal-dialog-centered" role="document">
+                  <div class="modal-content">
+                    <div class="modal-header">
+                      <h5 class="modal-title" id="settingsTitle">Settings</h5>
+                    </div>
+                    <div class="modal-body">
+                      <form>
+                        <p class="text-danger">
+                          Settings will be auto saved after close this
+                          window.<br />
+                          You may click "Connect to IPSA" button to reconnect.
+                        </p>
+                        <div class="form-group">
+                          <label for="endpoint" class="col-form-label"
+                            >Endpoint:</label
+                          >
+                          <input
+                            type="text"
+                            class="form-control"
+                            id="endpoint"
+                            value=""
+                          />
+                        </div>
+                        <div class="form-group">
+                          <label for="username" class="col-form-label"
+                            >Username:</label
+                          >
+                          <input
+                            type="text"
+                            class="form-control"
+                            id="username"
+                            value=""
+                          />
+                        </div>
+                        <div class="form-group">
+                          <label for="password" class="col-form-label"
+                            >Password:</label
+                          >
+                          <input
+                            type="text"
+                            class="form-control"
+                            id="password"
+                            value=""
+                          />
+                        </div>
+                        <div class="form-group">
+                          <label for="type" class="col-form-label">Type:</label>
+                          <input
+                            type="text"
+                            class="form-control"
+                            id="type"
+                            value=""
+                          />
+                        </div>
+                      </form>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="row mt-3">
+          <div class="col-6" id="parameter-area-placeholder"></div>
+          <div id="parameter-area" class="col-6">
+            <div class="row">
+              <div class="col-6">
+                <label for="skipFrames">Skip Frames:</label>
+                <input type="text" id="skipFrames" />
+              </div>
+              <div class="col-6">
+                <label for="waitTime">Wait Time:</label>
+                <input type="text" id="waitTime" />
+              </div>
+            </div>
+          </div>
+
+          <div class="col-3">
+            <div class="button-group">
               <button
                 id="startBtn"
                 class="btn btn-success"
                 onclick="startAndSend()"
                 disabled
               >
-                Start & Send
+                Start
               </button>
               <button
                 id="pauseBtn"
@@ -103,24 +214,16 @@
         <div class="col">
           <p>SVG received:</p>
           <canvas id="showcaseCanvas"></canvas>
-          <!-- <div class="svg-showcase" hidden></div> -->
         </div>
         <div class="col">
-            <p>Borders detected:</p>
-            <div id="border-canvas-area">
-
-            </div>
+          <p>Borders detected:</p>
+          <div id="border-canvas-area"></div>
         </div>
-        
-        
       </div>
     </div>
-    <!-- <svg xmlns="http://www.w3.org/2000/svg" width="592" height="1200" viewBox="0 0 592 1200" version="1.1">
-        <path d="M 575.079 246.583 C 575.127 247.748, 575.364 247.985, 575.683 247.188 C 575.972 246.466, 575.936 245.603, 575.604 245.271 C 575.272 244.939, 575.036 245.529, 575.079 246.583 M 575.079 252.583 C 575.127 253.748, 575.364 253.985, 575.683 253.188 C 575.972 252.466, 575.936 251.603, 575.604 251.271 C 575.272 250.939, 575.036 251.529, 575.079 252.583 M 14.833 965.884 C 14.196 971.977, 15.227 977, 17.113 977 C 19.407 977, 23.021 974.496, 22.539 973.240 C 22.242 972.468, 22 971.423, 22 970.918 C 22 970.413, 21.663 970.096, 21.250 970.212 C 20.837 970.329, 19.513 969.877, 18.307 969.208 C 16.686 968.308, 16.034 966.884, 15.807 963.745 C 15.531 959.923, 15.434 960.136, 14.833 965.884 " stroke="none" fill="black" fill-rule="evenodd"/>
-    </svg> -->
   </body>
   <script src="rewritten_cli_tool.js"></script>
-  <script src="FileSaver.js"></script>
+  <script src="utils.js"></script>
   <script
     async
     src="opencv.js"
