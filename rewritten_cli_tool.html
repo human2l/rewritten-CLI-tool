@@ -25,10 +25,6 @@
     <meta charset="utf-8" />
     <style>
       #showcaseCanvas {
-        /* position: absolute; */
-        /* left: 0px; */
-        /* top: 100px; */
-        /* margin: 10px; */
         border: thin solid #e60606;
       }
     </style>
@@ -37,38 +33,19 @@
     <div class="control-panel-placeholder">
       <p>opencv.js is loading......</p>
     </div>
-    <div class="control-panel">
-      <div class="controls">
+    <div class="control-panel bg-warning">
+      <div class="controls mx-3">
         <div class="row d-flex justify-content-between">
           <div class="col-2">
             <label for="fileInput">Select video:</label>
-            <input type="file" id="fileInput" name="file" />
+            <input type="file" id="fileInput" name="file" disabled />
           </div>
           <div class="col-4 text-danger">
             <p id="messageContent"></p>
           </div>
           <div class="col-3">
-            <div class="btn-group btn-group-toggle" data-toggle="buttons">
-              <label class="btn btn-info active">
-                <input
-                  type="radio"
-                  name="options"
-                  id="realtimeMode"
-                  checked
-                  onclick="toggleMode(this)"
-                />
-                Realtime Mode
-              </label>
-              <label class="btn btn-info">
-                <input
-                  type="radio"
-                  name="options"
-                  id="steppingMode"
-                  onclick="toggleMode(this)"
-                />
-                Stepping Mode
-              </label>
-            </div>
+              <label for="amplificationRatio">Amplification Ratio: </label>
+              <input type="text" id="amplificationRatioInput">
           </div>
           <div class="col-3">
             <div class="button-group">
@@ -153,20 +130,16 @@
           </div>
         </div>
         <div class="row mt-3">
-          <div class="col-6" id="parameter-area-placeholder"></div>
-          <div id="parameter-area" class="col-6">
+          <div class="col-6" id="parameter-area-realtime-mode">
             <div class="row">
-              <div class="col-6">
-                <label for="skipFrames">Skip Frames:</label>
-                <input type="text" id="skipFrames" />
-              </div>
-              <div class="col-6">
-                <label for="waitTime">Wait Time:</label>
-                <input type="text" id="waitTime" />
+              <div class="col">
+                <label for="minimumSendingDelay"
+                  >Minimum Sending Delay(seconds):
+                </label>
+                <input type="text" id="minimumSendingDelay" />
               </div>
             </div>
           </div>
-
           <div class="col-3">
             <div class="button-group">
               <button
@@ -179,7 +152,7 @@
               </button>
               <button
                 id="pauseBtn"
-                class="btn btn-warning"
+                class="btn btn-success"
                 onclick="pause()"
                 disabled
               >

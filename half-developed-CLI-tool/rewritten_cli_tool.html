@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <link
+      rel="stylesheet"
+      href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css"
+      integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh"
+      crossorigin="anonymous"
+    />
+    <script
+      src="https://code.jquery.com/jquery-3.4.1.slim.min.js"
+      integrity="sha384-J6qa4849blE2+poT4WnyKhv5vZF5SrPo0iEjwBvKU7imGFAV0wwj1yYfoRSJoZ+n"
+      crossorigin="anonymous"
+    ></script>
+    <script
+      src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js"
+      integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo"
+      crossorigin="anonymous"
+    ></script>
+    <script
+      src="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js"
+      integrity="sha384-wfSDF2E50Y2D1uUdj0O3uMBJnjuUD4Ih7YwaYd1iqfktj0Uod8GCExl3Og8ifwB6"
+      crossorigin="anonymous"
+    ></script>
+    <meta charset="utf-8" />
+    <style>
+      #showcaseCanvas {
+        /* position: absolute; */
+        /* left: 0px; */
+        /* top: 100px; */
+        /* margin: 10px; */
+        border: thin solid #e60606;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="control-panel-placeholder">
+      <p>opencv.js is loading......</p>
+    </div>
+    <div class="control-panel">
+      <div class="controls">
+        <div class="row d-flex justify-content-between">
+          <div class="col-2">
+            <label for="fileInput">Select video:</label>
+            <input type="file" id="fileInput" name="file" />
+          </div>
+          <div class="col-4 text-danger">
+            <p id="messageContent"></p>
+          </div>
+          <div class="col-3">
+            <div class="btn-group btn-group-toggle" data-toggle="buttons">
+              <label class="btn btn-info active">
+                <input
+                  type="radio"
+                  name="options"
+                  id="realtimeMode"
+                  checked
+                  onclick="toggleMode(this)"
+                />
+                Realtime Mode
+              </label>
+              <label class="btn btn-info">
+                <input
+                  type="radio"
+                  name="options"
+                  id="steppingMode"
+                  onclick="toggleMode(this)"
+                />
+                Stepping Mode
+              </label>
+            </div>
+          </div>
+          <div class="col-3">
+            <div class="button-group">
+              <button class="btn btn-primary" onclick="buildConnection()">
+                Connect to IPSA
+              </button>
+              <button
+                class="btn btn-secondary"
+                data-toggle="modal"
+                data-target="#settingsModal"
+              >
+                Settings
+              </button>
+              <div
+                class="modal fade"
+                id="settingsModal"
+                tabindex="-1"
+                role="dialog"
+                aria-labelledby="settingsTitle"
+                aria-hidden="true"
+              >
+                <div class="modal-dialog modal-dialog-centered" role="document">
+                  <div class="modal-content">
+                    <div class="modal-header">
+                      <h5 class="modal-title" id="settingsTitle">Settings</h5>
+                    </div>
+                    <div class="modal-body">
+                      <form>
+                        <p class="text-danger">
+                          Settings will be auto saved after close this
+                          window.<br />
+                          You may click "Connect to IPSA" button to reconnect.
+                        </p>
+                        <div class="form-group">
+                          <label for="endpoint" class="col-form-label"
+                            >Endpoint:</label
+                          >
+                          <input
+                            type="text"
+                            class="form-control"
+                            id="endpoint"
+                            value=""
+                          />
+                        </div>
+                        <div class="form-group">
+                          <label for="username" class="col-form-label"
+                            >Username:</label
+                          >
+                          <input
+                            type="text"
+                            class="form-control"
+                            id="username"
+                            value=""
+                          />
+                        </div>
+                        <div class="form-group">
+                          <label for="password" class="col-form-label"
+                            >Password:</label
+                          >
+                          <input
+                            type="text"
+                            class="form-control"
+                            id="password"
+                            value=""
+                          />
+                        </div>
+                        <div class="form-group">
+                          <label for="type" class="col-form-label">Type:</label>
+                          <input
+                            type="text"
+                            class="form-control"
+                            id="type"
+                            value=""
+                          />
+                        </div>
+                      </form>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="row mt-3">
+          <div class="col-6" id="parameter-area-realtime-mode">
+            <div class="row">
+                <div class="col">
+                <label for="minimumSendingDelay">Minimum Sending Delay(milliseconds):</label>
+                <input type="text" id="minimumSendingDelay">
+            </div>
+            </div>
+          </div>
+          <div id="parameter-area-stepping-mode" class="col-6">
+            <div class="row">
+              <div class="col-6">
+                <label for="skipFrames">Skip Frames:</label>
+                <input type="text" id="skipFrames" />
+              </div>
+              <div class="col-6">
+                <label for="waitTime">Wait Time(milliseconds):</label>
+                <input type="text" id="waitTime" />
+              </div>
+            </div>
+          </div>
+
+          <div class="col-3">
+            <div class="button-group">
+              <button
+                id="startBtn"
+                class="btn btn-success"
+                onclick="startAndSend()"
+                disabled
+              >
+                Start
+              </button>
+              <button
+                id="pauseBtn"
+                class="btn btn-warning"
+                onclick="pause()"
+                disabled
+              >
+                Pause
+              </button>
+              <button
+                id="resetBtn"
+                class="btn btn-danger"
+                onclick="reset()"
+                disabled
+              >
+                Reset
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="content-placeholder">
+      <p>Loading...</p>
+    </div>
+    <div class="content">
+      <div class="row">
+        <div class="col">
+          <p>Video loaded:</p>
+          <video id="inputVideoSrc" alt="No Video"></video>
+        </div>
+        <div class="col">
+          <p>Frame uploaded:</p>
+          <canvas id="uploadCanvas"></canvas>
+        </div>
+        <div class="col">
+          <p>SVG received:</p>
+          <canvas id="showcaseCanvas"></canvas>
+        </div>
+        <div class="col">
+          <p>Borders detected:</p>
+          <div id="border-canvas-area"></div>
+        </div>
+      </div>
+    </div>
+  </body>
+  <script src="rewritten_cli_tool.js"></script>
+  <script src="utils.js"></script>
+  <script
+    async
+    src="opencv.js"
+    onload="onOpenCvReady();"
+    type="text/javascript"
+  ></script>
+</html>

@@ -1,8 +1,4 @@
 Utils = {
-//   $: function(x) {
-//     return document.getElementById(x);
-//   },
-
   createElementFromHTML: function(htmlString) {
     var div = document.createElement("div");
     div.innerHTML = htmlString.trim();

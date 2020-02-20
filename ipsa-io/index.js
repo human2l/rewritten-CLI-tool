@@ -21,12 +21,13 @@ server.on('upgrade', function(request, socket, head) {
 wss.on('connection', function(ws, request) {
     console.log('AAA');
     ws.on('message', data => {
-	console.log("DDDD")
-        fs.writeFile('./tmp/test.jpg', data, (err) => {
-            if (err) throw err;
-        ws.send("got that jpg!");
-	    console.log('File saved');
-        });
+	// console.log("DDDD")
+    //     fs.writeFile('./tmp/test.jpg', data, (err) => {
+    //         if (err) throw err;
+    //     ws.send("got that jpg!");
+	//     console.log('File saved');
+    //     });
+    console.log(data)
     });
 });
 

@@ -7,16 +7,15 @@ const controlPanelPlaceholder = document.getElementsByClassName(
 const contentPlaceholder = document.getElementsByClassName(
   "content-placeholder"
 )[0];
-const parameterArea = document.getElementById("parameter-area");
-const parameterAreaPlaceholder = document.getElementById(
-  "parameter-area-placeholder"
-);
 const content = document.getElementsByClassName("content")[0];
 const startBtn = document.getElementById("startBtn");
 const pauseBtn = document.getElementById("pauseBtn");
 const resetBtn = document.getElementById("resetBtn");
 const inputFileElement = document.getElementById("fileInput");
 const video = document.getElementById("inputVideoSrc");
+const amplificationRatioInput = document.getElementById(
+  "amplificationRatioInput"
+);
 const uploadCanvas = document.getElementById("uploadCanvas");
 const uploadCtx = uploadCanvas.getContext("2d");
 const endpointInput = document.getElementById("endpoint");
@@ -26,15 +25,16 @@ const typeInput = document.getElementById("type");
 const borderCanvasArea = document.getElementById("border-canvas-area");
 const showcaseCanvas = document.getElementById("showcaseCanvas");
 const showcaseCtx = showcaseCanvas.getContext("2d");
+const minimumSendingDelayInput = document.getElementById("minimumSendingDelay");
 
 let ws = undefined;
 let cap = undefined;
 let frame = undefined;
-let imageScaleRatio = 1;
+let videoHeight = undefined;
+let videoWidth = undefined;
 let videoIsProcessing = false;
-let processingInterval = undefined;
+let realtimeProcessingInterval = undefined;
 let ignoreMessageReceived = false;
-let mode = "realtimeMode";
 
 init();
 
@@ -43,6 +43,7 @@ function init() {
   initControlDisplayState();
   initConnectionSettings();
   initInputCanvas();
+  initAmplificationRatioInput();
 }
 
 function initControlDisplayState() {
@@ -50,19 +51,20 @@ function initControlDisplayState() {
   content.hidden = true;
   contentPlaceholder.hidden = true;
   pauseBtn.hidden = true;
-  parameterArea.hidden = true;
-  parameterAreaPlaceholder.hidden = false;
 }
 
 function initDefaultConfiguration() {
-  imageScaleRatio = 1 / 4;
+  videoHeight = "1920";
+  videoWidth = "1080";
   mode = "realtimeMode";
+  minimumSendingDelayInput.value = "1.5";
+  amplificationRatioInput.value = "1";
 }
 
 function initConnectionSettings() {
   endpointInput.value = "ws://192.168.1.209:8080";
-  usernameInput.value = "kai";
-  passwordInput.value = "anything";
+  usernameInput.value = "user";
+  passwordInput.value = "password";
   typeInput.value = "whiteboard";
 }
 
@@ -76,8 +78,8 @@ function initInputCanvas() {
       video.src = URL.createObjectURL(e.target.files[0]);
       video.oncanplay = function() {
         video.muted = true;
-        video.height = video.videoHeight * imageScaleRatio;
-        video.width = video.videoWidth * imageScaleRatio;
+        video.height = videoHeight * amplificationRatioInput.value;
+        video.width = videoWidth * amplificationRatioInput.value;
         startBtn.disabled = false;
         pauseBtn.disabled = false;
         resetBtn.disabled = false;
@@ -90,75 +92,66 @@ function initInputCanvas() {
   );
 }
 
+//To keep connection alive
+function initConnectionInterval(){
+    setInterval(() => {
+        ws.send({ cmd: "keep_alive" });
+    }, 25);
+}
+
+function initAmplificationRatioInput() {
+  amplificationRatioInput.addEventListener(
+    "change",
+    e => {
+      console.log("amplification changing");
+      video.height = videoHeight * amplificationRatioInput.value;
+      video.width = videoWidth * amplificationRatioInput.value;
+      initVideoCapture();
+    },
+    false
+  );
+}
+
 function initVideoCapture() {
   cap = new cv.VideoCapture(video);
   frame = new cv.Mat(video.height, video.width, cv.CV_8UC4);
 }
 
-//This function is used when the svg content is shifted.
-//It will send the first several frames slowly to give the server sometime to handle the input
-var preparationInterval = undefined;
-function preparation() {
-  preparationInterval = setInterval(() => {
-    processVideo();
-  }, 2000);
-}
-//End the preparation Interval
-function endPreparation() {
-  clearInterval(preparationInterval);
-}
-
 //startBtn click event
 function startAndSend() {
-    //for realtime mode
-  if (mode == "realtimeMode") {
-    startBtn.hidden = true;
-    pauseBtn.hidden = false;
-    video.play();
-    startProcessingInterval();
-    //for stepping mode
-  } else if (mode == "steppingMode") {
-
-  }
+  startBtn.hidden = true;
+  pauseBtn.hidden = false;
+  minimumSendingDelayInput.disabled = true;
+  startRealtimeProcessingInterval();
 }
 
 //pauseBtn click event
 function pause() {
-    //for realtime mode
-  if (mode == "realtimeMode") {
-    if (!video.paused) {
-      video.pause();
-      pauseBtn.innerHTML = "Resume";
-    } else {
-      video.play();
-      startProcessingInterval();
-      pauseBtn.innerHTML = "Pause";
-    }
-    //for stepping mode
-  } else if (mode == "steppingMode") {
+  if (!video.paused) {
+    video.pause();
+    pauseBtn.innerHTML = "Resume";
+  } else {
+    startRealtimeProcessingInterval();
+    pauseBtn.innerHTML = "Pause";
   }
 }
 
 //resetBtn click event
 function reset() {
-    //for realtime mode 
-  if (mode == "realtimeMode") {
-    ignoreMessageReceived = true;
-    pauseBtn.hidden = true;
-    startBtn.hidden = false;
-    video.pause();
-    video.currentTime = 0;
-    if (processingInterval != undefined) clearInterval(processingInterval);
-    uploadCtx.clearRect(0, 0, uploadCanvas.width, uploadCanvas.height);
-    showcaseCtx.clearRect(0, 0, showcaseCanvas.width, showcaseCanvas.height);
-    if (borderCanvasArea.hasChildNodes()) {
-      borderCanvasArea.removeChild(borderCanvasArea.childNodes[0]);
-    }
-    ignoreMessageReceived = false;
-    //for stepping mode 
-  } else if (mode == "steppingMode") {
-
+  ignoreMessageReceived = true;
+  pauseBtn.hidden = true;
+  startBtn.hidden = false;
+  minimumSendingDelayInput.disabled = false;
+  video.pause();
+  video.currentTime = 0;
+  if (realtimeProcessingInterval != undefined)
+    clearInterval(realtimeProcessingInterval);
+  uploadCtx.clearRect(0, 0, uploadCanvas.width, uploadCanvas.height);
+  showcaseCtx.clearRect(0, 0, showcaseCanvas.width, showcaseCanvas.height);
+  if (borderCanvasArea.hasChildNodes()) {
+    borderCanvasArea.removeChild(borderCanvasArea.childNodes[0]);
   }
+  ignoreMessageReceived = false;
 }
 
 function buildConnection() {
@@ -174,11 +167,12 @@ function buildConnection() {
   );
 
   ws.onopen = function(evt) {
+    inputFileElement.disabled = false;
     console.log("Connection open ...");
   };
 
   ws.onmessage = function(evt) {
-    console.log(evt.data);
+    console.log(evt);
     if (ignoreMessageReceived) return;
     messageContent.innerHTML = "";
     var evtObject = JSON.parse(evt.data);
@@ -189,7 +183,7 @@ function buildConnection() {
       switch (firstKey) {
         case "version":
           messageContent.innerHTML = "Connected to IPSA!";
-          //   console.log(currentObject);
+          console.log(currentObject);
           break;
         case "error":
           var errorMessage = currentObject[firstKey];
@@ -201,7 +195,6 @@ function buildConnection() {
           break;
         case "processing_time":
           videoIsProcessing = false;
-          // console.log(currentObject);
           break;
         case "svg":
           handleSVG(currentObject);
@@ -228,6 +221,8 @@ function buildConnection() {
   ws.onerror = function(evt) {
     console.log(evt);
   };
+
+  initConnectionInterval();
 }
 
 //When opencv.js loaded successfully
@@ -241,14 +236,15 @@ function onOpenCvReady() {
 
 //Note: the limit of server to handle the jpg is around 1.5 second.
 //When keep sending the jpg file too frequently, the svg content will shift (Same as the bug testing team found)
-function startProcessingInterval() {
-  processingInterval = setInterval(() => {
-    processVideo();
-    if (video.paused) clearInterval(processingInterval);
-  }, 1500);
+function startRealtimeProcessingInterval() {
+  video.play();
+  realtimeProcessingInterval = setInterval(() => {
+    processRealtimeVideo();
+    if (video.paused) clearInterval(realtimeProcessingInterval);
+  }, minimumSendingDelayInput.value * 1000);
 }
 
-function processVideo() {
+function processRealtimeVideo() {
   if (inputFileElement.files.item(0) == null) return;
   if (videoIsProcessing) return;
   videoIsProcessing = true;
@@ -289,15 +285,4 @@ function handleCorners(cornerObject) {
   if (borderCanvasArea.hasChildNodes())
     borderCanvasArea.replaceChild(borderCanvas, borderCanvasArea.childNodes[0]);
   else borderCanvasArea.appendChild(borderCanvas);
-}
-
-function toggleMode(e) {
-  mode = e.id;
-  if (mode == "realtimeMode") {
-    parameterArea.hidden = true;
-    parameterAreaPlaceholder.hidden = false;
-  } else if (mode == "steppingMode") {
-    parameterArea.hidden = false;
-    parameterAreaPlaceholder.hidden = true;
-  }
 }
