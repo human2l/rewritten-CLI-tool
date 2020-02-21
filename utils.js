@@ -36,5 +36,11 @@ Utils = {
     newCanvas.height = oldCanvas.height;
     context.drawImage(oldCanvas, 0, 0);
     return newCanvas;
+  },
+
+  cloneCanvasContent: function(originalCanvas, targetCanvas) {
+    targetCanvas.width = originalCanvas.width;
+    targetCanvas.height = originalCanvas.height;
+    targetCanvas.getContext("2d").drawImage(originalCanvas, 0, 0);
   }
 };

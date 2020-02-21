@@ -44,9 +44,10 @@
             <p id="messageContent"></p>
           </div>
           <div class="col-3">
-              <label for="amplificationRatio">Amplification Ratio: </label>
-              <input type="text" id="amplificationRatioInput">
+              <!-- blahblah -->
+              
           </div>
+          
           <div class="col-3">
             <div class="button-group">
               <button class="btn btn-primary" onclick="buildConnection()">
@@ -62,6 +63,7 @@
               <div
                 class="modal fade"
                 id="settingsModal"
+                data-backdrop="static"
                 tabindex="-1"
                 role="dialog"
                 aria-labelledby="settingsTitle"
@@ -71,13 +73,14 @@
                   <div class="modal-content">
                     <div class="modal-header">
                       <h5 class="modal-title" id="settingsTitle">Settings</h5>
+                      <button type="button" class="close" data-dismiss="modal" aria-label="Close" onclick="cancelSettings()">
+                        <span aria-hidden="true">&times;</span>
+                      </button>
                     </div>
                     <div class="modal-body">
                       <form>
                         <p class="text-danger">
-                          Settings will be auto saved after close this
-                          window.<br />
-                          You may click "Connect to IPSA" button to reconnect.
+                          After changing the settings, please click "Connect to IPSA" button to reconnect.
                         </p>
                         <div class="form-group">
                           <label for="endpoint" class="col-form-label"
@@ -123,6 +126,9 @@
                         </div>
                       </form>
                     </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-primary" data-dismiss="modal" onclick="saveSettings()">Save</button>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -152,7 +158,7 @@
               </button>
               <button
                 id="pauseBtn"
-                class="btn btn-success"
+                class="btn btn-info"
                 onclick="pause()"
                 disabled
               >
@@ -180,17 +186,18 @@
           <p>Video loaded:</p>
           <video id="inputVideoSrc" alt="No Video"></video>
         </div>
-        <div class="col">
+        <div class="col" hidden>
           <p>Frame uploaded:</p>
-          <canvas id="uploadCanvas"></canvas>
+          <canvas id="uploadCanvas" hidden></canvas>
+          <canvas id="uploadShowcaseCanvas"></canvas>
+        </div>
+        <div class="col">
+          <p>Frames uploaded & borders detected:</p>
+          <div id="border-canvas-area"></div>
         </div>
         <div class="col">
           <p>SVG received:</p>
           <canvas id="showcaseCanvas"></canvas>
-        </div>
-        <div class="col">
-          <p>Borders detected:</p>
-          <div id="border-canvas-area"></div>
         </div>
       </div>
     </div>
