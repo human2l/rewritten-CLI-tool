@@ -4,14 +4,9 @@ const controlPanel = document.getElementsByClassName("control-panel")[0];
 const controlPanelPlaceholder = document.getElementsByClassName(
   "control-panel-placeholder"
 )[0];
-const contentPlaceholder = document.getElementsByClassName(
-  "content-placeholder"
-)[0];
 const content = document.getElementsByClassName("content")[0];
 const startBtn = document.getElementById("startBtn");
-const pauseBtn = document.getElementById("pauseBtn");
 const resetBtn = document.getElementById("resetBtn");
-const inputFileElement = document.getElementById("fileInput");
 const video = document.getElementById("inputVideoSrc");
 const uploadCanvas = document.getElementById("uploadCanvas");
 const uploadCtx = uploadCanvas.getContext("2d");
@@ -25,11 +20,10 @@ const borderCanvasArea = document.getElementById("border-canvas-area");
 const showcaseCanvas = document.getElementById("showcaseCanvas");
 const showcaseCtx = showcaseCanvas.getContext("2d");
 const minimumSendingDelayInput = document.getElementById("minimumSendingDelay");
+let localStream = undefined;
 let ws = undefined;
 let cap = undefined;
 let frame = undefined;
-let videoHeight = undefined;
-let videoWidth = undefined;
 let videoIsProcessing = false;
 let realtimeProcessingInterval = undefined;
 
@@ -39,21 +33,15 @@ function init() {
   initDefaultConfiguration();
   initControlDisplayState();
   initConnectionSettings();
-  initInputCanvas();
-  bindKeyEvent();
 }
 
 function initControlDisplayState() {
   controlPanel.hidden = true;
   content.hidden = true;
-  contentPlaceholder.hidden = true;
-  pauseBtn.hidden = true;
+  resetBtn.hidden = true;
 }
 
 function initDefaultConfiguration() {
-  videoHeight = "1920";
-  videoWidth = "1080";
-  mode = "realtimeMode";
   minimumSendingDelayInput.value = "1.5";
 }
 
@@ -91,39 +79,6 @@ function cancelSettings() {
   typeInput.value = localStorage.getItem("type");
 }
 
-//required:1920 1080
-function initInputCanvas() {
-  inputFileElement.addEventListener(
-    "change",
-    e => {
-      content.hidden = true;
-      contentPlaceholder.hidden = false;
-      video.src = URL.createObjectURL(e.target.files[0]);
-      video.onloadeddata = function() {
-        if (video.videoHeight > video.videoWidth) {
-          videoHeight = "1920";
-          videoWidth = "1080";
-        } else {
-          videoWidth = "1920";
-          videoHeight = "1080";
-        }
-        video.height = videoHeight;
-        video.width = videoWidth;
-      };
-      video.oncanplay = function() {
-        video.muted = true;
-        startBtn.disabled = false;
-        pauseBtn.disabled = false;
-        resetBtn.disabled = false;
-        content.hidden = false;
-        contentPlaceholder.hidden = true;
-        initVideoCapture();
-      };
-    },
-    false
-  );
-}
-
 //To keep connection alive
 function initConnectionInterval() {
   setInterval(() => {
@@ -139,36 +94,37 @@ function initVideoCapture() {
 //startBtn click event
 function startAndSend() {
   startBtn.hidden = true;
-  pauseBtn.hidden = false;
   minimumSendingDelayInput.disabled = true;
-  video.play();
-  startRealtimeProcessingInterval();
-}
-
-//pauseBtn click event
-function pause() {
-  if (!video.paused) {
-    video.pause();
-    clearInterval(realtimeProcessingInterval);
-    videoIsProcessing = false;
-    pauseBtn.innerHTML = "Resume";
-  } else {
-    video.play();
-    startRealtimeProcessingInterval();
-    pauseBtn.innerHTML = "Pause";
+  resetBtn.hidden = false;
+  if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+    // Not adding `{ audio: true }` since we only want video now
+    navigator.mediaDevices.getUserMedia({ video: true }).then(function(stream) {
+      localStream = stream;
+      video.srcObject = localStream;
+      video.onloadeddata = function() {
+        const fixedVideoSize = Utils.fixedVideoSize(video);
+        video.height = fixedVideoSize[0];
+        video.width = fixedVideoSize[1];
+      };
+      video.oncanplay = function() {
+        video.muted = true;
+        content.hidden = false;
+        initVideoCapture();
+        startRealtimeProcessingInterval();
+      };
+    });
   }
 }
 
 //resetBtn click event
 function reset() {
-  pauseBtn.hidden = true;
   startBtn.hidden = false;
+  resetBtn.hidden = true;
   minimumSendingDelayInput.disabled = false;
-  video.pause();
   videoIsProcessing = false;
-  video.currentTime = 0;
-  if (realtimeProcessingInterval != undefined)
-    clearInterval(realtimeProcessingInterval);
+  if (realtimeProcessingInterval != undefined){
+      clearInterval(realtimeProcessingInterval);
+  }
   uploadCtx.clearRect(0, 0, uploadCanvas.width, uploadCanvas.height);
   uploadShowcaseCtx.clearRect(
     0,
@@ -180,6 +136,10 @@ function reset() {
   if (borderCanvasArea.hasChildNodes()) {
     borderCanvasArea.removeChild(borderCanvasArea.childNodes[0]);
   }
+
+  video.pause();
+  video.srcObject = null;
+  localStream.getTracks()[0].stop();
 }
 
 function buildConnection() {
@@ -195,13 +155,12 @@ function buildConnection() {
   );
 
   ws.onopen = function(evt) {
-    inputFileElement.disabled = false;
     console.log("Connection open ...");
     initConnectionInterval();
   };
 
   ws.onmessage = function(evt) {
-    // console.log(evt);
+    console.log(evt);
     messageContent.innerHTML = "";
     var evtObject = JSON.parse(evt.data);
     var messageArray = [];
@@ -214,26 +173,21 @@ function buildConnection() {
           console.log(currentObject);
           break;
         case "error":
-          if (video.paused) return;
           var errorMessage = currentObject[firstKey];
           messageArray.push("Error: " + errorMessage);
           break;
         case "warning":
-          if (video.paused) return;
           var warningMessage = currentObject[firstKey];
           messageArray.push("Warning: " + warningMessage);
           break;
         case "processing_time":
-          if (video.paused) return;
           Utils.cloneCanvasContent(uploadCanvas, uploadShowcaseCanvas);
           videoIsProcessing = false;
           break;
         case "svg":
-          if (video.paused) return;
           handleSVG(currentObject);
           break;
         case "corners":
-          if (video.paused) return;
           handleCorners(currentObject);
           break;
         default:
@@ -275,7 +229,6 @@ function startRealtimeProcessingInterval() {
 }
 
 function processRealtimeVideo() {
-  if (inputFileElement.files.item(0) == null) return;
   if (videoIsProcessing) return;
   videoIsProcessing = true;
   cap.read(frame);
@@ -316,20 +269,3 @@ function handleCorners(cornerObject) {
     borderCanvasArea.replaceChild(borderCanvas, borderCanvasArea.childNodes[0]);
   else borderCanvasArea.appendChild(borderCanvas);
 }
-
-
-function bindKeyEvent() {
-    $(document).keydown(function(e) {
-      switch (e.which) {
-        //Spacebar
-        case 32:
-          pause()
-          break;
-        default:
-          // exit this handler for other keys
-          return;
-      }
-      //prevent default key actions
-      e.preventDefault();
-    });
-  }

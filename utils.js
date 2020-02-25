@@ -42,5 +42,20 @@ Utils = {
     targetCanvas.width = originalCanvas.width;
     targetCanvas.height = originalCanvas.height;
     targetCanvas.getContext("2d").drawImage(originalCanvas, 0, 0);
+  },
+  
+  //input: video node
+  //return: [height,width]
+  fixedVideoSize: function(video) {
+    if (video.videoHeight > video.videoWidth) {
+      if (video.videoHeight > 1920 || video.videoWidth > 1080) {
+        return ["1920", "1080"];
+      }
+    } else {
+      if (video.videoWidth > 1920 || video.videoHeight > 1080) {
+        return ["1080", "1920"];
+      }
+    }
+    return [video.videoHeight, video.videoWidth];
   }
 };

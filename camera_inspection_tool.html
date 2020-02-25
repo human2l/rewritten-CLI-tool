@@ -36,16 +36,11 @@
     <div class="control-panel bg-warning">
       <div class="controls mx-3">
         <div class="row d-flex justify-content-between">
-          <div class="col-2">
-            <label for="fileInput">Select video:</label>
-            <input type="file" id="fileInput" name="file" disabled />
+          <div class="col-3">
+              <h4>Camera Inspection Tool</h4>
           </div>
           <div class="col-4 text-danger">
             <p id="messageContent"></p>
-          </div>
-          <div class="col-3">
-              <!-- blahblah -->
-              
           </div>
           
           <div class="col-3">
@@ -152,23 +147,14 @@
                 id="startBtn"
                 class="btn btn-success"
                 onclick="startAndSend()"
-                disabled
+                
               >
                 Start
-              </button>
-              <button
-                id="pauseBtn"
-                class="btn btn-info"
-                onclick="pause()"
-                disabled
-              >
-                Pause
               </button>
               <button
                 id="resetBtn"
                 class="btn btn-danger"
                 onclick="reset()"
-                disabled
               >
                 Reset
               </button>
@@ -177,14 +163,11 @@
         </div>
       </div>
     </div>
-    <div class="content-placeholder">
-      <p>Loading...</p>
-    </div>
     <div class="content">
       <div class="row">
         <div class="col">
           <p>Video loaded:</p>
-          <video id="inputVideoSrc" alt="No Video"></video>
+          <video id="inputVideoSrc" alt="No Video" autoplay></video>
         </div>
         <div class="col" hidden>
           <p>Frame uploaded:</p>
@@ -202,7 +185,7 @@
       </div>
     </div>
   </body>
-  <script src="rewritten_cli_tool.js"></script>
+  <script src="camera_inspection_tool.js"></script>
   <script src="utils.js"></script>
   <script
     async
